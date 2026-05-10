@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+
+<title>Chromium Max Audio Player</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
+
+<style>
+:root{
+--primary:#00d2ff;
+--bg:#050505;
+--glass:rgba(255,255,255,.08);
+--border:rgba(0, 210, 255, 0.35); /* Idle Cyan Border */
+--danger:#ff4d4d; 
+--touch-active:#ffd700; /* Deep Yellow touch effect */
+--smooth-active:#00ff87; /* Green active color for Smooth Mode */
+/* Premium Trustbin Deep Styling Palette */
+--trustbin-dark:#020b14; 
+--trustbin-deep:#051624; 
+--trustbin-border:rgba(0, 210, 255, 0.2); 
+}
+
+*{
+margin:0; 
+padding:0; 
+box-sizing:border-box; 
+-webkit-tap-highlight-color:transparent; 
+}
+
+html,body{
+width:100%; 
+height:100%; 
+overflow:hidden; 
+background:#000; 
+font-family:Segoe UI,sans-serif; 
+color:#fff; 
+}
+
+body{
+position:fixed; 
+inset:0; 
+}
+
+.bg-blur{
+position:fixed; 
+inset:0; 
+background-size:cover; 
+background-position:center; 
+filter:blur(65px); 
+transform:scale(1.2); 
+opacity:.28; 
+z-index:-2; 
+transition:1s; 
+}
+
+.overlay{
+position:fixed; 
+inset:0; 
+background:linear-gradient(to bottom,#00000055,#000000ee); 
+z-index:-1; 
+}
+
+.player{
+width:100%; 
+height:91vh; 
+display:flex; 
+flex-direction:column; 
+justify-content:space-between; 
+padding:8px 12px; 
+gap:2px; 
+overflow:hidden; 
+}
+
+.top-bar{
+display:flex; 
+justify-content:space-between; 
+align-items:center; 
+}
+
+/* Base styles for ALL buttons to apply Cyan Border */
+button, .top-btn, .btn-ctrl, .btn-sm, .close-btn, .song-item {
+border: 1px solid var(--border) !important;
+box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 
+            0 3px 6px rgba(0, 0, 0, 0.4),
+            0 0 4px rgba(0, 210, 255, 0.15);
+transition: all 0.2s ease;
+outline: none;
+}
+
+/* Touch active effect for ALL buttons - Deep Yellow */
+button:active, .top-btn:active, .btn-ctrl:active, .btn-sm:active, .close-btn:active, .song-item:active,
+.btn-ctrl.long-pressing {
+border-color: var(--touch-active) !important;
+box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 
+            0 0 12px var(--touch-active) !important;
+transform: translateY(1.5px);
+}
+
+.top-btn{
+width:42px; 
+height:42px; 
+border-radius:12px; 
+background:var(--glass); 
+color:#fff; 
+font-size:15px; 
+cursor: pointer; 
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.counter{
+font-size:13px; 
+opacity:.75; 
+font-weight:600; 
+}
+
+/* Premium Deep Trustbin Metallic Branding Header */
+.player-heading{
+text-align:center; 
+margin-top:5px; 
+margin-bottom:2px; 
+background: linear-gradient(135deg, var(--trustbin-dark) 0%, var(--trustbin-deep) 100%); 
+border: 1px solid var(--trustbin-border); 
+padding: 10px 15px; 
+border-radius: 16px; 
+box-shadow: 0 4px 15px rgba(0, 210, 255, 0.1); 
+}
+
+.main-title{
+font-size:20px; 
+font-weight:800; 
+letter-spacing: 0.5px; 
+margin-top: 3px; 
+background:linear-gradient(90deg,#00d2ff,#fff,#00d2ff); 
+-webkit-background-clip:text; 
+-webkit-text-fill-color:transparent; 
+}
+
+.mini-title{
+font-size:10px; 
+opacity:.75; 
+margin-top:2px; 
+color: #8ab4f8; 
+letter-spacing:1.5px; 
+text-transform: uppercase; 
+font-weight: 700; 
+}
+
+.album-wrapper{
+flex:1; 
+display:flex; 
+align-items:center; 
+justify-content:center; 
+min-height:0; 
+margin: 2px 0; 
+}
+
+.album-box,
+#visualizerBox{
+width:100%; 
+max-width:100%; 
+height:45vh; 
+max-height:45vh; 
+aspect-ratio:1 / 1; 
+border-radius:24px; 
+overflow:hidden; 
+background:#090909; 
+border:2px solid rgba(0, 210, 255, 0.25);
+}
+
+.album-box img{
+width:100%; 
+height:100%; 
+object-fit:cover; 
+}
+
+/* Dynamic No Art Placeholder Design (Rotates Off) */
+.no-art-placeholder {
+width:100%;
+height:100%;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+background:#050b11;
+}
+
+.music-icon-circle {
+width:100px;
+height:100px;
+border-radius:50%;
+border:2.5px solid var(--primary);
+display:flex;
+align-items:center;
+justify-content:center;
+box-shadow:0 0 20px rgba(0, 210, 255, 0.35),
+           inset 0 0 12px rgba(0, 210, 255, 0.15);
+}
+
+.music-icon-circle i {
+font-size:42px;
+color:var(--primary);
+text-shadow:0 0 10px rgba(0, 210, 255, 0.5);
+animation: none !important; /* Rotation Off completely */
+}
+
+#visualizerBox{
+display:none; 
+align-items:flex-end; 
+justify-content:space-evenly; 
+padding:18px 8px; 
+}
+
+.bar{
+width:5%; 
+min-height:5px; 
+border-radius:10px 10px 0 0; 
+transition:height .05s linear; 
+}
+
+.info{
+text-align:center; 
+margin-top:2px; 
+}
+
+.info h1{
+font-size:18px; 
+white-space:nowrap; 
+overflow:hidden; 
+text-overflow:ellipsis; 
+}
+
+.info p{
+font-size:12px; 
+opacity:.65; 
+margin-top:2px; 
+}
+
+.progress-area{
+width:100%; 
+}
+
+.scrub{
+width:100%; 
+height:5px; 
+appearance:none; 
+border-radius:100px; 
+overflow:hidden; 
+background:rgba(255,255,255,.1); 
+cursor: pointer; 
+}
+
+.scrub::-webkit-slider-thumb{
+appearance:none; 
+width:14px; 
+height:14px; 
+border-radius:50%; 
+background:var(--primary); 
+box-shadow:-100vw 0 0 100vw var(--primary); 
+}
+
+.times{
+display:flex; 
+justify-content:space-between; 
+margin-top:4px; 
+font-size:11px; 
+opacity:.7; 
+}
+
+.controls-main{
+display:flex; 
+justify-content:space-between; 
+align-items:center; 
+margin-top:0; 
+}
+
+.btn-ctrl{
+width:42px; 
+height:42px; 
+border-radius:12px;
+background:var(--glass);
+color:#fff; 
+font-size:17px; 
+cursor: pointer; 
+display: flex;
+align-items: center;
+justify-content: center;
+user-select: none;
+-webkit-user-select: none;
+}
+
+/* Play/Pause Button - Circular Geometry strictly applied */
+.play-btn{
+width:62px; 
+height:62px; 
+border-radius:50% !important; 
+background:#fff; 
+color:#000; 
+display:flex; 
+align-items:center; 
+justify-content:center; 
+font-size:22px; 
+cursor: pointer; 
+}
+
+.secondary-controls{
+display:grid; 
+grid-template-columns:repeat(5,1fr); 
+gap:6px; 
+margin-top:2px; 
+}
+
+.btn-sm{
+border-radius:12px; 
+background:var(--glass); 
+color:#fff; 
+min-height:48px; 
+font-size:9px; 
+cursor: pointer; 
+}
+
+.btn-sm i{
+display:block; 
+font-size:14px; 
+margin-bottom:2px; 
+}
+
+.popup{
+position:fixed; 
+left:0; 
+bottom:-100%; 
+width:100%; 
+height:78vh; 
+background:#101010; 
+border-top:2px solid var(--primary); 
+border-radius:24px 24px 0 0; 
+transition:.35s; 
+z-index:999; 
+display:flex; 
+flex-direction:column; 
+padding:16px; 
+}
+
+.popup.active{
+bottom:0; 
+}
+
+.popup-header{
+display:flex; 
+justify-content:space-between; 
+align-items:center; 
+}
+
+.close-btn{
+width:38px; 
+height:38px; 
+border-radius:10px; 
+background:#1d1d1d; 
+color:#fff; 
+cursor: pointer; 
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+/* Sorting Options Bar */
+.sort-bar {
+display:flex; 
+gap:10px; 
+margin-top:12px; 
+background:rgba(255,255,255,0.03); 
+padding:8px 12px; 
+border-radius:10px; 
+}
+
+.sort-bar label {
+font-size:11px; 
+opacity:0.7; 
+font-weight:600; 
+text-transform: uppercase; 
+}
+
+.sort-select {
+flex:1; 
+background: #181818; 
+border: 1px solid var(--border); 
+color: #fff; 
+padding: 6px; 
+border-radius: 6px; 
+font-size: 12px; 
+outline: none; 
+cursor: pointer; 
+}
+
+.list-container{
+flex:1; 
+overflow:auto; 
+margin-top:12px; 
+}
+
+.song-item{
+display:flex; 
+align-items:center; 
+gap:12px; 
+padding:13px; 
+border-radius:14px; 
+background:#181818; 
+margin-bottom:8px; 
+cursor: pointer; 
+}
+
+.song-item.active{
+border-left:4px solid var(--touch-active) !important;
+color:var(--primary); 
+}
+
+.song-name{
+flex:1; 
+overflow:hidden; 
+white-space:nowrap; 
+text-overflow:ellipsis; 
+font-size:14px; 
+}
+
+.remove-btn {
+background: transparent; 
+border: none !important; 
+box-shadow: none !important;
+color: #ffd700; 
+font-size: 14px; 
+padding: 5px 8px; 
+cursor: pointer; 
+transition: color 0.2s; 
+}
+
+.remove-btn:hover {
+color: var(--danger); 
+}
+
+.eq-band{
+margin-bottom:16px; 
+}
+
+.eq-band label{
+display:block; 
+margin-bottom:6px; 
+font-size:12px; 
+opacity:.8; 
+}
+
+.eq-slider{
+width:100%; 
+}
+
+#relinkNotice {
+display: none;
+align-items: center;
+justify-content: space-between;
+background: rgba(0, 210, 255, 0.12);
+border: 1px dashed var(--primary);
+padding: 10px 14px;
+border-radius: 12px;
+margin: 8px 12px 2px 12px;
+font-size: 12px;
+}
+
+#relinkNotice button {
+background: var(--primary);
+color: #000;
+border: none !important;
+padding: 5px 12px;
+border-radius: 8px;
+font-weight: bold;
+cursor: pointer;
+}
+
+/* EQ Active Preset Custom Highlight Rule */
+.eq-preset-item.active-preset {
+border-left: 4px solid var(--touch-active) !important;
+border-color: var(--touch-active) !important;
+color: var(--touch-active) !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg-blur" id="bgBlur"></div> <div class="overlay"></div> <div class="player">
+
+<div class="top-bar">
+
+<button class="top-btn" onclick="triggerFolderImport()">📁</button>
+
+<div class="counter" id="songCounter">0 / 0</div> 
+
+<div style="display:flex;gap:8px;">
+<button class="top-btn" id="smoothPlayBtn" onclick="toggleSmoothPlay()" title="Smooth Play Mode">⚡</button>
+<button class="top-btn" onclick="togglePopup('playlistPopup')"> <i class="fa fa-bars"></i> </button>
+</div>
+</div>
+
+<div id="relinkNotice">
+<span>⚠️ Directory permission expired on restart.</span>
+<button onclick="requestFolderPermission()">Grant Permission</button>
+</div>
+
+<div class="player-heading">
+<div class="main-title">Chromium Max Audio Player</div> <div class="mini-title">Premium Android Music Experience</div> </div>
+
+<div class="album-wrapper">
+<div class="album-box" id="albumBox">
+  <div class="no-art-placeholder">
+    <div class="music-icon-circle">
+      <i class="fa fa-music"></i>
+    </div>
+  </div>
+</div>
+<div id="visualizerBox"></div> </div>
+
+<div class="info">
+<h1 id="title">Chromium Max Audio Player</h1> <p id="sub">Import Music To Start</p> </div>
+
+<div class="progress-area">
+<input type="range" id="progress" class="scrub" value="0" step="0.1"> <div class="times">
+<span id="curTime">0:00</span> <span id="durTime">0:00</span> </div>
+</div>
+
+<div class="controls-main">
+<button class="btn-ctrl" id="modeBtn" onclick="changeMode()"> <i class="fa fa-repeat"></i> </button>
+
+<button class="btn-ctrl" onclick="prev()"> <i class="fa fa-backward-step"></i> </button>
+
+<button class="btn-ctrl" id="btnSeekPrev"> <i class="fa fa-rotate-left"></i> </button>
+
+<button class="play-btn" id="playBtn" onclick="togglePlay()"> <i class="fa fa-play"></i> </button>
+
+<button class="btn-ctrl" id="btnSeekNext"> <i class="fa fa-rotate-right"></i> </button>
+
+<button class="btn-ctrl" onclick="next()"> <i class="fa fa-forward-step"></i> </button>
+
+<button class="btn-ctrl" id="muteBtn" onclick="toggleMute()"> <i class="fa fa-volume-high"></i> </button>
+</div>
+
+<div class="secondary-controls">
+<button class="btn-sm" id="volUpBtn" onclick="adjustVol(0.1)"> <i class="fa fa-plus"></i> 100 VOL+ </button>
+
+<button class="btn-sm" id="volDownBtn" onclick="adjustVol(-0.1)"> <i class="fa fa-minus"></i> 100 VOL- </button>
+
+<button class="btn-sm" id="speedBtn" onclick="changeSpeed()"> <i class="fa fa-gauge"></i> 1.0x </button>
+
+<button class="btn-sm" onclick="shareCurrentSong()"> <i class="fa fa-share-nodes"></i> SHARE </button>
+
+<button class="btn-sm" onclick="togglePopup('morePopup')"> <i class="fa fa-ellipsis-vertical"></i> MORE </button>
+</div>
+
+</div>
+
+<div class="popup" id="playlistPopup">
+<div class="popup-header">
+<h3>Playlist</h3> <button class="close-btn" onclick="togglePopup('playlistPopup')">✕</button> </div>
+<div class="sort-bar">
+<label for="playlistSort">Sort:</label> <select id="playlistSort" class="sort-select" onchange="applySorting(this.value)"> <option value="normal">Normal (Import Order)</option> <option value="asc">Alphabetical (A - Z)</option> <option value="desc">Alphabetical (Z - A)</option> <option value="size_desc">Size: Big to Small</option> <option value="size_asc">Size: Small to Big</option> </select>
+</div>
+<div class="list-container" id="playlistItems"></div> </div>
+
+<div class="popup" id="morePopup">
+<div class="popup-header">
+<h3>More Options</h3> <button class="close-btn" onclick="togglePopup('morePopup')">✕</button> </div>
+<div class="list-container">
+<div class="song-item" onclick="togglePopup('dualPlayerPopup'); initDualPlayers();"> <i class="fa fa-headphones"></i> <div class="song-name">Dual Ear Player</div> </div>
+<div class="song-item" onclick="toggleVisualizer()"> <i class="fa fa-wave-square"></i> <div class="song-name" id="visualizerText">Audio Visualizer : OFF</div> </div>
+<div class="song-item" onclick="togglePopup('eqPopup')"> <i class="fa fa-sliders"></i> <div class="song-name">Equalizer</div> </div>
+<div class="song-item" onclick="sleepTimer()"> <i class="fa fa-bed"></i> <div class="song-name">Sleep Timer</div> </div>
+<div class="song-item" onclick="showInfo()"> <i class="fa fa-circle-info"></i> <div class="song-name">Song Information</div> </div>
+<div class="song-item" onclick="togglePopup('aboutPopup')"> <i class="fa fa-circle-question"></i> <div class="song-name">About</div> </div>
+<div class="song-item" onclick="resetPlayer()"> <i class="fa fa-rotate-left"></i> <div class="song-name">Reset Player</div> </div>
+<div class="song-item" onclick="exitPlayer()"> <i class="fa fa-right-from-bracket"></i> <div class="song-name">Exit Player</div> </div>
+</div>
+</div>
+
+<div class="popup" id="eqPopup">
+<div class="popup-header">
+<h3>Advanced Equalizer</h3> <button class="close-btn" onclick="togglePopup('eqPopup')">✕</button> </div>
+<div class="list-container">
+<div class="song-item" onclick="toggleEQ()"> <i class="fa fa-power-off"></i> <div class="song-name" id="eqStatus">Equalizer : OFF</div> </div>
+<div class="song-item" onclick="toggle360()"> <i class="fa fa-circle-notch"></i> <div class="song-name" id="sound360Text">360° Sound : OFF</div> </div>
+<div class="song-item eq-preset-item" data-preset="normal" onclick="setPreset('normal')"> <i class="fa fa-music"></i> <div class="song-name">Normal Preset</div> </div>
+<div class="song-item eq-preset-item" data-preset="sweetsound" onclick="setPreset('sweetsound')"> <i class="fa fa-wand-magic-sparkles"></i> <div class="song-name">3D Sweet Sound</div> </div>
+<div class="song-item eq-preset-item" data-preset="bass" onclick="setPreset('bass')"> <i class="fa fa-drum"></i> <div class="song-name">Bass Boost</div> </div>
+<div class="song-item eq-preset-item" data-preset="vocal" onclick="setPreset('vocal')"> <i class="fa fa-microphone"></i> <div class="song-name">Vocal Boost</div> </div>
+<div class="song-item eq-preset-item" data-preset="treble" onclick="setPreset('treble')"> <i class="fa fa-wave-square"></i> <div class="song-name">Treble Boost</div> </div>
+<div class="song-item eq-preset-item" data-preset="dance" onclick="setPreset('dance')"> <i class="fa fa-compact-disc"></i> <div class="song-name">Dance Mode</div> </div>
+<div class="song-item eq-preset-item" data-preset="rock" onclick="setPreset('rock')"> <i class="fa fa-guitar"></i> <div class="song-name">Rock Mode</div> </div>
+<div class="song-item eq-preset-item" data-preset="soft" onclick="setPreset('soft')"> <i class="fa fa-cloud"></i> <div class="song-name">Soft Music</div> </div>
+
+
+<div id="eqBands"></div> 
+
+<div class="eq-band">
+<label>Manual Bass</label> <input type="range" id="manualBass" class="eq-slider" min="-30" max="30" value="0"> </div>
+<div class="eq-band">
+<label>Manual Mid</label> <input type="range" id="manualMid" class="eq-slider" min="-30" max="30" value="0"> </div>
+<div class="eq-band">
+<label>Manual Treble</label> <input type="range" id="manualTreble" class="eq-slider" min="-30" max="30" value="0"> </div>
+</div>
+</div>
+
+<div class="popup" id="infoPopup">
+<div class="popup-header">
+<h3>Song Details</h3> <button class="close-btn" onclick="togglePopup('infoPopup')">✕</button> </div>
+<div class="list-container" id="infoContent" style="font-size:14px;line-height:1.8;"></div> </div>
+
+<div class="popup" id="aboutPopup">
+<div class="popup-header">
+<h3>About Player</h3> <button class="close-btn" onclick="togglePopup('aboutPopup')">✕</button> </div>
+<div class="list-container" style="font-size:14px;line-height:1.8;text-align:center;padding:15px;">
+<h2>Chromium Max</h2> <p style="opacity:0.6;margin-bottom:15px;">Version 3.1</p> <p style="text-align:justify;opacity:0.85;margin-bottom:20px;">
+Chromium Max is a state-of-the-art mobile-optimized audio visualizer player offering rich bass preset configurations, automated ID3 metadata extraction, seamless visual analytics, and premium desktop/mobile audio rendering capabilities.
+<div style="text-align:center;font-weight:bold;margin-top:10px; margin-bottom:3px;">
+    Developed by A. Rana's Team.
+</div>
+</p>
+<hr style="border:0;border-top:1px solid var(--border);margin-bottom:20px;"> <h3>Contact Us</h3> <p style="color:var(--primary);font-weight:600;margin-top:5px;">chromiumplayer@gmail.com</p> </div>
+</div>
+
+
+
+
+<div class="popup-header" style="border-bottom: 1px solid rgba(0, 210, 255, 0.15); padding-bottom: 10px;">
+  <h3>Dual Ear Player</h3>
+  <button class="close-btn" onclick="confirmCloseDualPlayer()">✕</button>
+</div>
+
+
+
+
+
+<div class="popup" id="dualPlayerPopup" style="height: 90vh; margin-top: 5vh; background: #070e17; border-top: 2px solid var(--touch-active); border-radius: 24px 24px 0 0;">
+  <div class="popup-header" style="border-bottom: 1px solid rgba(0, 210, 255, 0.15); padding-bottom: 10px;">
+    <h3>Dual Ear Player</h3>
+<button class="close-btn" onclick="confirmCloseDualPlayer()">✕</button>
+  </div>
+  
+  <div class="list-container" style="display: flex; flex-direction: column; gap: 15px; padding-top: 10px;">
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+      <button class="btn-sm" style="flex: 1; min-height: 40px; border-color: var(--touch-active) !important;" onclick="dualAction('play')">
+        <i class="fa fa-play"></i> Both Play
+      </button>
+      <button class="btn-sm" style="flex: 1; min-height: 40px; border-color: var(--touch-active) !important;" onclick="dualAction('pause')">
+        <i class="fa fa-pause"></i> Both Pause
+      </button>
+    </div>
+
+    <div id="dualL" style="background: rgba(0,210,255,0.03); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--primary); font-weight: bold; font-size: 13px;"><i class="fa fa-left-long"></i> LEFT EAR PLAYER</span>
+        <div style="display: flex; gap: 6px;">
+          <input type="file" id="dualFolderL" webkitdirectory directory multiple style="display: none;" onchange="loadDualDirectory('L', this.files)">
+          <button class="top-btn" style="width: 32px; height: 32px; font-size: 11px;" onclick="document.getElementById('dualFolderL').click()" title="Load Folder">📁</button>
+          
+          <input type="file" id="dualFileL" multiple accept="audio/*" style="display: none;" onchange="loadDualFiles('L', this.files)">
+          <button class="top-btn" style="width: 32px; height: 32px; font-size: 11px;" onclick="document.getElementById('dualFileL').click()" title="Load Files">📄</button>
+          
+          <button class="top-btn" style="width: 32px; height: 32px; font-size: 11px;" onclick="toggleDualList('L')"><i class="fa fa-list"></i></button>
+        </div>
+      </div>
+      <div id="dualTitleL" style="font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">No Track Loaded</div>
+      <input type="range" id="dualProgressL" class="scrub" value="0" step="0.1" oninput="seekDual('L', this.value)">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" onclick="prevDual('L')"><i class="fa fa-backward-step"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" onclick="playPauseDual('L')"><i class="fa idual-play-L fa-play"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" onclick="nextDual('L')"><i class="fa fa-forward-step"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" id="dualRandBtnL" onclick="toggleRandomDual('L')"><i class="fa fa-shuffle" style="opacity: 0.4;"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" id="dualMuteBtnL" onclick="muteDual('L')"><i class="fa fa-volume-high"></i></button>
+        <input type="range" min="0" max="1" step="0.05" value="0.8" style="flex: 1; accent-color: var(--primary);" oninput="volDual('L', this.value)">
+      </div>
+      
+      <div id="dualPlaylistContainerL" style="display: none; max-height: 120px; overflow-y: auto; margin-top: 8px; border-top: 1px solid rgba(0, 210, 255, 0.15); padding-top: 8px;"></div>
+    </div>
+
+    <div style="height: 1px; background: rgba(0, 210, 255, 0.25); margin: 2px 0;"></div>
+
+    <div id="dualR" style="background: rgba(255,215,0,0.03); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--touch-active); font-weight: bold; font-size: 13px;">RIGHT EAR PLAYER <i class="fa fa-right-long"></i></span>
+        <div style="display: flex; gap: 6px;">
+          <input type="file" id="dualFolderR" webkitdirectory directory multiple style="display: none;" onchange="loadDualDirectory('R', this.files)">
+          <button class="top-btn" style="width: 32px; height: 32px; font-size: 11px;" onclick="document.getElementById('dualFolderR').click()" title="Load Folder">📁</button>
+          
+          <input type="file" id="dualFileR" multiple accept="audio/*" style="display: none;" onchange="loadDualFiles('R', this.files)">
+          <button class="top-btn" style="width: 32px; height: 32px; font-size: 11px;" onclick="document.getElementById('dualFileR').click()" title="Load Files">📄</button>
+          
+          <button class="top-btn" style="width: 32px; height: 32px; font-size: 11px;" onclick="toggleDualList('R')"><i class="fa fa-list"></i></button>
+        </div>
+      </div>
+      <div id="dualTitleR" style="font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">No Track Loaded</div>
+      <input type="range" id="dualProgressR" class="scrub" value="0" step="0.1" oninput="seekDual('R', this.value)">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" onclick="prevDual('R')"><i class="fa fa-backward-step"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" onclick="playPauseDual('R')"><i class="fa idual-play-R fa-play"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" onclick="nextDual('R')"><i class="fa fa-forward-step"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" id="dualRandBtnR" onclick="toggleRandomDual('R')"><i class="fa fa-shuffle" style="opacity: 0.4;"></i></button>
+        <button class="btn-ctrl" style="width: 32px; height: 32px; font-size: 12px;" id="dualMuteBtnR" onclick="muteDual('R')"><i class="fa fa-volume-high"></i></button>
+        <input type="range" min="0" max="1" step="0.05" value="0.8" style="flex: 1; accent-color: var(--touch-active);" oninput="volDual('R', this.value)">
+      </div>
+      
+      <div id="dualPlaylistContainerR" style="display: none; max-height: 120px; overflow-y: auto; margin-top: 8px; border-top: 1px solid rgba(255, 215, 0, 0.15); padding-top: 8px;"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+let audio=new Audio(); 
+audio.crossOrigin="anonymous"; 
+
+let playlist = [];
+let currentIndex = 0;
+let directoryHandle = null;
+
+let mode='sequential'; 
+let speeds=[1,1.25,1.5,2,.8]; 
+let spdIndex=0; 
+let visualizerOn=false; 
+let eqOn=false; 
+let sound360=false; 
+let currentMeta={}; 
+let currentSortMode = 'normal'; 
+let isSmoothPlay = false; 
+
+// ==========================================
+// STATIC AUDIO GRAPH SETUP WITH BYPASS SWAPPER
+// ==========================================
+const AudioContextClass = window.AudioContext || window.webkitAudioContext; 
+let ctx = null; 
+let source = null; 
+let analyser = null; 
+let filters = []; 
+let panner = null;
+let splitter = null;
+let merger = null;
+let delayLtoR, gainLtoR, hrtfLtoR;
+let delayRtoL, gainRtoL, hrtfRtoL;
+let masterGain = null;
+let isAudioGraphConnected = false;
+
+// Dynamic bypass switches to avoid CPU block
+let bypassGain = null;
+let mainChainGain = null;
+
+function initAudioGraph() {
+  if (isAudioGraphConnected) return;
+
+  ctx = new AudioContextClass(); 
+  source = ctx.createMediaElementSource(audio); 
+  analyser = ctx.createAnalyser(); 
+  analyser.fftSize = 256; 
+
+  // Bypass Controller Nodes
+  bypassGain = ctx.createGain(); // Direct line
+  mainChainGain = ctx.createGain(); // EQ/Spatial Line
+
+  // By default, routing through the main EQ chain
+  bypassGain.gain.value = 0.0;
+  mainChainGain.gain.value = 1.0;
+
+  // Setup Equalizer Bands
+  const freqs=[32,64,125,250,500,1000,2000,4000,8000,16000]; 
+  filters = [];
+  freqs.forEach(f=>{ 
+    let eq=ctx.createBiquadFilter(); 
+    eq.type='peaking'; 
+    eq.frequency.value=f; 
+    eq.Q.value=1; 
+    eq.gain.value=0; 
+    filters.push(eq); 
+  });
+
+  // Source split: 1 to Main Chain, 1 to Bypass Line
+  source.connect(mainChainGain);
+  source.connect(bypassGain);
+
+  // Connection through filters
+  mainChainGain.connect(filters[0]); 
+  for(let i=0;i<filters.length-1;i++){ 
+    filters[i].connect(filters[i+1]); 
+  }
+
+  // Setup 3D Spatializer Orbit
+  panner = ctx.createPanner ? ctx.createPanner() : null;
+  if (panner) {
+    panner.panningModel = 'HRTF';
+    panner.distanceModel = 'inverse';
+  }
+
+  splitter = ctx.createChannelSplitter(2);
+  merger = ctx.createChannelMerger(2);
+
+  delayLtoR = ctx.createDelay();
+  gainLtoR = ctx.createGain();
+  hrtfLtoR = ctx.createBiquadFilter();
+
+  delayRtoL = ctx.createDelay();
+  gainRtoL = ctx.createGain();
+  hrtfRtoL = ctx.createBiquadFilter();
+
+  hrtfLtoR.type = "highshelf"; hrtfLtoR.frequency.value = 4000; hrtfLtoR.gain.value = -8; 
+  hrtfRtoL.type = "highshelf"; hrtfRtoL.frequency.value = 4000; hrtfRtoL.gain.value = -8;
+
+  delayLtoR.delayTime.value = 0.015; 
+  delayRtoL.delayTime.value = 0.015; 
+
+  gainLtoR.gain.value = 0.0; 
+  gainRtoL.gain.value = 0.0; 
+
+  if (panner) {
+    filters[filters.length - 1].connect(panner);
+    panner.connect(splitter);
+  } else {
+    filters[filters.length - 1].connect(splitter);
+  }
+
+  splitter.connect(merger, 0, 0); 
+  splitter.connect(merger, 1, 1); 
+
+  splitter.connect(delayLtoR, 0);
+  delayLtoR.connect(hrtfLtoR);
+  hrtfLtoR.connect(gainLtoR);
+  gainLtoR.connect(merger, 0, 1);
+
+  splitter.connect(delayRtoL, 1);
+  delayRtoL.connect(hrtfRtoL);
+  hrtfRtoL.connect(gainRtoL);
+  gainRtoL.connect(merger, 0, 0);
+
+  masterGain = ctx.createGain();
+  merger.connect(analyser); 
+  
+  // Connect both processed and direct lines to master gain
+  analyser.connect(masterGain); 
+  bypassGain.connect(masterGain);
+
+  masterGain.connect(ctx.destination); 
+
+  buildEQManualSliders();
+  isAudioGraphConnected = true;
+}
+
+const el={
+  title:document.getElementById('title'), 
+  sub:document.getElementById('sub'), 
+  art:null, // Re-assigned dynamically when artwork image is rendered
+  bg:document.getElementById('bgBlur'), 
+  play:document.getElementById('playBtn'), 
+  prog:document.getElementById('progress'), 
+  cur:document.getElementById('curTime'), 
+  dur:document.getElementById('durTime'), 
+  list:document.getElementById('playlistItems'), 
+  counter:document.getElementById('songCounter') 
+};
+
+// Build Visualizer DOM Bars
+const vis= document.getElementById('visualizerBox'); 
+const freqs=[32,64,125,250,500,1000,2000,4000,8000,16000];
+for(let i=0;i<10;i++){ 
+  let b=document.createElement('div'); 
+  b.className='bar'; 
+  b.style.background= `hsl(${i*36},100%,50%)`; 
+  vis.appendChild(b); 
+}
+const bars=document.querySelectorAll('.bar'); 
+
+/* ==================================
+   DATABASE STORAGE (IndexedDB)
+================================== */
+let db;
+const request = indexedDB.open("ChromiumPlayerDB", 2);
+
+request.onupgradeneeded = e => {
+  db = e.target.result;
+  if (!db.objectStoreNames.contains("settings")) {
+    db.createObjectStore("settings");
+  }
+};
+
+request.onsuccess = async e => {
+  db = e.target.result;
+  await restoreFolderAccess();
+};
+
+async function triggerFolderImport() {
+  if (!window.showDirectoryPicker) {
+    alert("Directory Access API not supported in this browser environment.");
+    return;
+  }
+
+  try {
+    const handle = await window.showDirectoryPicker();
+    directoryHandle = handle;
+
+    const tx = db.transaction(["settings"], "readwrite");
+    tx.objectStore("settings").put(handle, "folderHandle");
+
+    playlist = [];
+    await scanFolderRecursive(handle);
+    applySorting(currentSortMode);
+    renderPlaylist();
+
+    if (playlist.length) {
+      loadSong(0);
+    }
+
+    document.getElementById("relinkNotice").style.display = "none";
+  } catch(err) {
+    console.log(err);
+  }
+}
+
+async function scanFolderRecursive(dirHandle, path = "") {
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind === "file") {
+      if (entry.name.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i)) {
+        playlist.push({
+          name: entry.name,
+          path: path + entry.name, 
+          handle: entry,
+          sizeVal: 0
+        });
+      }
+    }
+    else if (entry.kind === "directory") {
+      await scanFolderRecursive(entry, path + entry.name + "/");
+    }
+  }
+}
+
+async function restoreFolderAccess() {
+  const tx = db.transaction(["settings"], "readonly");
+  const req = tx.objectStore("settings").get("folderHandle");
+
+  req.onsuccess = async () => {
+    const handle = req.result;
+    if (!handle) return;
+    directoryHandle = handle;
+
+    try {
+      const permission = await handle.queryPermission({ mode: "read" });
+
+      if (permission === "granted") {
+        playlist = [];
+        await scanFolderRecursive(handle);
+        applySorting(currentSortMode);
+        renderPlaylist();
+
+        if (playlist.length) {
+          loadSong(0, false);
+        }
+      }
+      else {
+        document.getElementById("relinkNotice").style.display = "flex";
+      }
+    } catch(err) {
+      console.log(err);
+    }
+  };
+}
+
+async function requestFolderPermission() {
+  if (!directoryHandle) return;
+
+  try {
+    const permission = await directoryHandle.requestPermission({ mode: "read" });
+
+    if (permission === "granted") {
+      playlist = [];
+      await scanFolderRecursive(directoryHandle);
+      applySorting(currentSortMode);
+      renderPlaylist();
+
+      if (playlist.length) {
+        loadSong(0, false);
+      }
+
+      document.getElementById("relinkNotice").style.display = "none";
+    }
+  } catch(err) {
+    console.log(err);
+  }
+}
+
+/* ========================================================
+   TRACK CONTROL LIFECYCLE (SMOOTH HYBRID DESIGN)
+======================================================== */
+async function loadSong(index, shouldPlay = true){
+  if (!playlist.length) return;
+
+  currentIndex = index;
+  const item = playlist[index];
+
+  // Instantly apply CSS-based built-in placeholder structure
+  document.getElementById('albumBox').innerHTML = `
+    <div class="no-art-placeholder">
+      <div class="music-icon-circle">
+        <i class="fa fa-music"></i>
+      </div>
+    </div>
+  `;
+  el.bg.style.backgroundImage = 'none';
+  el.title.innerText = item.name;
+  el.sub.innerText = "Loading Metadata...";
+
+  if(audio.src) URL.revokeObjectURL(audio.src);
+
+  const file = await item.handle.getFile();
+  audio.src = URL.createObjectURL(file);
+
+  const rawCleanName = file.name.replace(/\.[^/.]+$/, "");
+  currentMeta = {
+    fileName: file.name,
+    path: item.path || file.name,
+    size: (file.size / 1024 / 1024).toFixed(2) + " MB",
+    type: file.type,
+    duration: "Loading...",
+    title: rawCleanName,
+    artist: "Local Audio",
+    album: "Chromium Max Library"
+  };
+
+  updateNotificationMetadata(currentMeta.title, "Playing File", null);
+
+  const restorePlaceholder = () => {
+    document.getElementById('albumBox').innerHTML = `
+      <div class="no-art-placeholder">
+        <div class="music-icon-circle">
+          <i class="fa fa-music"></i>
+        </div>
+      </div>
+    `;
+    el.bg.style.backgroundImage = 'none';
+  };
+
+  if (shouldPlay) {
+    audio.play().catch(err => console.log("Auto-play blocked:", err));
+    el.play.innerHTML = '<i class="fa fa-pause"></i>';
+    if(ctx && ctx.state === 'suspended') ctx.resume();
+  } else {
+    el.play.innerHTML = '<i class="fa fa-play"></i>';
+  }
+
+  jsmediatags.read(file, {
+    onSuccess: tag => {
+      const t = tag.tags;
+      let artworkUrl = null;
+      
+      if(t.title) {
+        el.title.innerText = t.title;
+        currentMeta.title = t.title;
+      }
+      if(t.artist) {
+        el.sub.innerText = t.artist;
+        currentMeta.artist = t.artist;
+      }
+      if(t.album) {
+        currentMeta.album = t.album;
+      }
+
+      if(t.picture){
+        let base64 = '';
+        for(let i = 0; i < t.picture.data.length; i++){
+          base64 += String.fromCharCode(t.picture.data[i]);
+        }
+        artworkUrl = `data:${t.picture.format};base64,${btoa(base64)}`;
+        
+        document.getElementById('albumBox').innerHTML = `<img id="art" src="${artworkUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+        el.art = document.getElementById('art'); 
+        el.bg.style.backgroundImage = `url(${artworkUrl})`;
+      } else {
+        restorePlaceholder();
+      }
+
+      updateNotificationMetadata(currentMeta.title, currentMeta.artist, artworkUrl);
+      renderPlaylist();
+    },
+    onError: () => {
+      restorePlaceholder();
+      updateNotificationMetadata(currentMeta.title, "Local Audio", null);
+      renderPlaylist();
+    }
+  });
+
+  audio.onloadedmetadata = () => {
+    currentMeta.duration = format(audio.duration);
+  };
+  
+  renderPlaylist();
+}
+
+/* ========================================================
+   SYSTEM MEDIA NOTIFICATIONS (CRASH & FREEZE PROOF)
+======================================================== */
+function updateNotificationMetadata(title, artist, artworkUrl) {
+  if ('mediaSession' in navigator) {
+    const fallbackArt = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgYmFzZTY0Ij48cmVjdCB3aWR0aD0iMTAwJSIgY29sb3I9IiMwNTAiLz48L3N2Zz4=";
+    const secureArt = (artworkUrl && artworkUrl.startsWith('data:')) ? artworkUrl : fallbackArt;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title,
+      artist: artist,
+      album: currentMeta.album || "Chromium Max Library",
+      artwork: [
+        { src: secureArt, sizes: '512x512', type: 'image/png' }
+      ]
+    });
+    updateMediaSessionPlaybackState();
+  }
+}
+
+/* ==================================
+   RAPID ACCELERATING 20ms SKIP
+================================== */
+function setupQuickSkip(buttonId, direction) {
+  const btn = document.getElementById(buttonId);
+  
+  let pressTimer = null;
+  let scrubInterval = null;
+  let isLongPress = false;
+  let userWasMutedBeforeScrub = false;
+
+  const startHandler = (e) => {
+    e.preventDefault();
+    isLongPress = false;
+    btn.classList.add('long-pressing');
+
+    pressTimer = setTimeout(() => {
+      isLongPress = true;
+      userWasMutedBeforeScrub = audio.muted;
+      audio.muted = true; 
+
+      scrubInterval = setInterval(() => {
+        const skipStep = 3; 
+        const amount = direction * skipStep;
+        audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + amount));
+      }, 50); 
+    }, 350);
+  };
+
+  const endHandler = (e) => {
+    e.preventDefault();
+    btn.classList.remove('long-pressing');
+    clearTimeout(pressTimer);
+    clearInterval(scrubInterval);
+
+    if (isLongPress) {
+      audio.muted = userWasMutedBeforeScrub; 
+    } else {
+      seek(direction * 10);
+    }
+    isLongPress = false;
+  };
+
+  btn.addEventListener('mousedown', startHandler);
+  btn.addEventListener('mouseup', endHandler);
+  btn.addEventListener('mouseleave', endHandler);
+  btn.addEventListener('touchstart', startHandler, { passive: false });
+  btn.addEventListener('touchend', endHandler, { passive: false });
+}
+
+setupQuickSkip('btnSeekPrev', -1);
+setupQuickSkip('btnSeekNext', 1);
+
+/* ==================================
+   PLAYLIST REMOVE & RESET
+================================== */
+function removeSong(index, event){
+  if(event) event.stopPropagation();
+  
+  const songName = playlist[index] ? playlist[index].name : "this song";
+  const confirmDelete = confirm(`Are you sure you want to delete "${songName}" from the playlist?`);
+  
+  if (confirmDelete) {
+    playlist.splice(index, 1);
+    
+    if(currentIndex >= playlist.length){
+      currentIndex = 0;
+    }
+    
+    renderPlaylist();
+  }
+}
+
+function resetPlayer(confirmPrompt = true){
+  if(confirmPrompt){
+    if(!confirm("Reset player and unlink folder?")) return;
+  }
+
+  audio.pause();
+  if(audio.src) URL.revokeObjectURL(audio.src);
+  audio.src='';
+  playlist=[];
+  currentIndex=0;
+  directoryHandle=null;
+
+  const tx = db.transaction(["settings"], "readwrite");
+  tx.objectStore("settings").clear();
+
+  el.title.innerText = 'Chromium Max Audio Player';
+  el.sub.innerText = 'Import Music To Start';
+  
+  // Custom Default Initial App State Placeholder reset
+  document.getElementById('albumBox').innerHTML = `
+    <div class="no-art-placeholder">
+      <div class="music-icon-circle">
+        <i class="fa fa-music"></i>
+      </div>
+    </div>
+  `;
+  el.art = null;
+  el.bg.style.backgroundImage = 'none';
+
+  renderPlaylist();
+}
+
+/* ==================================
+   PLAYLIST RENDER & CONTROLS
+================================== */
+function renderPlaylist(){
+  el.counter.innerText = playlist.length ? `${currentIndex+1} / ${playlist.length}` : '0 / 0';
+  el.list.innerHTML = playlist.map((f,i)=>`
+    <div class="song-item ${i===currentIndex?'active':''}" onclick="loadSong(${i}); togglePopup('playlistPopup')">
+      <i class="fa ${i===currentIndex ?'fa-volume-high' :'fa-music'}"></i>
+      <div class="song-name">${f.name}</div>
+      <button class="remove-btn" onclick="removeSong(${i},event)">
+        <i class="fa fa-trash-can"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+function togglePlay(){
+  if(!audio.src) return; 
+  if(audio.paused){ 
+    audio.play(); 
+    el.play.innerHTML='<i class="fa fa-pause"></i>'; 
+    if(ctx && ctx.state==='suspended') ctx.resume(); 
+  }else{
+    audio.pause(); 
+    el.play.innerHTML='<i class="fa fa-play"></i>'; 
+  }
+  updateMediaSessionPlaybackState(); 
+}
+
+function updateMediaSessionPlaybackState() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing"; 
+  }
+}
+
+function next(){
+  if(!playlist.length) return; 
+  if(mode==='random'){ 
+    currentIndex= Math.floor(Math.random()*playlist.length); 
+  }else{
+    currentIndex= (currentIndex+1)%playlist.length; 
+  }
+  loadSong(currentIndex); 
+}
+
+function prev(){
+  if(!playlist.length) return; 
+  currentIndex= (currentIndex-1+playlist.length)%playlist.length; 
+  loadSong(currentIndex); 
+}
+
+function seek(sec){
+  audio.currentTime+=sec; 
+}
+
+function adjustVol(v){
+  audio.volume=Math.max(0, Math.min(1,audio.volume+v)); 
+  let vol=Math.round(audio.volume*100); 
+  document.getElementById('volUpBtn').innerHTML= `<i class="fa fa-plus"></i>${vol} VOL+`; 
+  document.getElementById('volDownBtn').innerHTML= `<i class="fa fa-minus"></i>${vol} VOL-`; 
+}
+
+function toggleMute(){
+  audio.muted=!audio.muted; 
+  document.getElementById('muteBtn').innerHTML= audio.muted ?'<i class="fa fa-volume-xmark"></i>' :'<i class="fa fa-volume-high"></i>'; 
+}
+
+function changeSpeed(){
+  spdIndex= (spdIndex+1)%speeds.length; 
+  audio.playbackRate= speeds[spdIndex]; 
+  document.getElementById('speedBtn').innerHTML= `<i class="fa fa-gauge"></i>${speeds[spdIndex]}x`; 
+}
+
+function changeMode(){
+  if(mode==='sequential'){ 
+    mode='repeat'; 
+    document.getElementById('modeBtn').innerHTML= '<i class="fa fa-repeat" style="color:#00d2ff"></i>'; 
+  }else if(mode==='repeat'){ 
+    mode='random'; 
+    document.getElementById('modeBtn').innerHTML= '<i class="fa fa-shuffle" style="color:#00d2ff"></i>'; 
+  }else{
+    mode='sequential'; 
+    document.getElementById('modeBtn').innerHTML= '<i class="fa fa-repeat"></i>'; 
+  }
+}
+
+audio.ontimeupdate=()=>{
+  if(!isNaN(audio.duration)){ 
+    el.prog.max=audio.duration; 
+    el.prog.value=audio.currentTime; 
+    el.cur.innerText= format(audio.currentTime); 
+    el.dur.innerText= format(audio.duration); 
+  }
+};
+
+document.getElementById('progress').oninput=e=>{
+  audio.currentTime=e.target.value; 
+};
+
+audio.onended=()=>{
+  mode==='repeat' ?loadSong(currentIndex) :next(); 
+};
+
+function format(s){
+  let m=Math.floor(s/60); 
+  let sec=Math.floor(s%60); 
+  return `${m}:${sec<10?'0'+sec:sec}`; 
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (ctx && ctx.state === "suspended" && !audio.paused) {
+    ctx.resume();
+  }
+});
+
+function togglePopup(id){
+  document.getElementById(id).classList.toggle('active'); 
+}
+
+function applySorting(mode) {
+  currentSortMode = mode; 
+  if (playlist.length <= 1) { 
+    renderPlaylist(); 
+    return;
+  }
+
+  const currentPlayingTrack = playlist[currentIndex]; 
+
+  if (mode === 'asc') {
+    playlist.sort((a, b) => a.name.localeCompare(b.name)); 
+  } else if (mode === 'desc') {
+    playlist.sort((a, b) => b.name.localeCompare(a.name)); 
+  } else if (mode === 'size_desc') {
+    playlist.sort((a, b) => (b.sizeVal || 0) - (a.sizeVal || 0)); 
+  } else if (mode === 'size_asc') {
+    playlist.sort((a, b) => (a.sizeVal || 0) - (b.sizeVal || 0)); 
+  } else if (mode === 'normal') {
+    playlist.sort((a, b) => (a.id || 0) - (b.id || 0)); 
+  }
+
+  if (currentPlayingTrack) {
+    currentIndex = playlist.indexOf(currentPlayingTrack); 
+  }
+
+  renderPlaylist(); 
+}
+
+/* ========================================================
+   SMOOTH PLAY SWITCH (BYPASS ROUTING - NO FREEZING)
+======================================================== */
+function toggleSmoothPlay() {
+  if (!playlist.length) return;
+  initAudioGraph();
+
+  isSmoothPlay = !isSmoothPlay;
+  const smoothBtn = document.getElementById('smoothPlayBtn');
+
+  if (isSmoothPlay) {
+    // 1. Smooth UI Styling Apply
+    smoothBtn.style.color = "var(--smooth-active)";
+    smoothBtn.style.borderColor = "var(--smooth-active) !important";
+    smoothBtn.style.boxShadow = "0 0 10px var(--smooth-active)";
+
+    // 2. Shut off Heavy Processing Hooks
+    if (visualizerOn) disableVisualizerDirectly();
+    if (eqOn) disableEQDirectly();
+    if (sound360) disable360Directly();
+
+    // 3. SEAMLESS REROUTING (No audio close, no freezing)
+    if (ctx && isAudioGraphConnected) {
+      // Fade out main processor chain instantly
+      mainChainGain.gain.setValueAtTime(0, ctx.currentTime);
+      // Fade in direct raw pipeline instantly
+      bypassGain.gain.setValueAtTime(1.0, ctx.currentTime);
+    }
+  } else {
+    // Restore Regular Play Modalities
+    smoothBtn.style.color = "#fff";
+    smoothBtn.style.borderColor = "var(--border) !important";
+    smoothBtn.style.boxShadow = "none";
+    
+    if (ctx && isAudioGraphConnected) {
+      // Route signal back to EQ filters
+      bypassGain.gain.setValueAtTime(0, ctx.currentTime);
+      mainChainGain.gain.setValueAtTime(1.0, ctx.currentTime);
+    }
+  }
+}
+
+// Inline silent turnoff methods to bypass alert restrictions
+function disableVisualizerDirectly() {
+  visualizerOn = false;
+  document.getElementById('visualizerText').innerText = `Audio Visualizer : OFF`;
+  document.getElementById('albumBox').style.display = 'block'; 
+  vis.style.display = 'none'; 
+  if(visualizerFrameId) cancelAnimationFrame(visualizerFrameId);
+}
+
+function disableEQDirectly() {
+  eqOn = false;
+  document.getElementById('eqStatus').innerText = 'Equalizer : OFF';
+  filters.forEach(f => { f.gain.value = 0; });
+  document.querySelectorAll('.eq-slider').forEach(s => { s.value = 0; });
+  clearActivePresetHighlight();
+}
+
+function disable360Directly() {
+  sound360 = false;
+  document.getElementById('sound360Text').innerText = `360° Sound : OFF`;
+  if (sound360Timer) {
+    clearInterval(sound360Timer);
+    sound360Timer = null;
+  }
+  gainLtoR.gain.setValueAtTime(0, ctx.currentTime);
+  gainRtoL.gain.setValueAtTime(0, ctx.currentTime);
+  masterGain.gain.setValueAtTime(1.0, ctx.currentTime);
+  if (panner) {
+    panner.positionX.setValueAtTime(0, ctx.currentTime);
+    panner.positionY.setValueAtTime(0, ctx.currentTime);
+    panner.positionZ.setValueAtTime(0, ctx.currentTime);
+  }
+}
+
+/* ========================================================
+   VISUALIZER, 3D SPATIALIZER & EQUALIZER PRESETS
+======================================================== */
+let visualizerFrameId = null;
+
+function toggleVisualizer(){
+  if (isSmoothPlay) {
+    alert("Please turn off 'Smooth Play Mode' (⚡ button) to use Visualizer!");
+    return;
+  }
+  initAudioGraph(); 
+  visualizerOn=!visualizerOn; 
+  document.getElementById('visualizerText').innerText= `Audio Visualizer : ${visualizerOn?'ON':'OFF'}`; 
+  document.getElementById('albumBox').style.display= visualizerOn?'none':'block'; 
+  vis.style.display= visualizerOn?'flex':'none'; 
+
+  if(visualizerOn) {
+    animateVisualizer(); 
+  } else {
+    if(visualizerFrameId) cancelAnimationFrame(visualizerFrameId);
+  }
+}
+
+function animateVisualizer(){
+  if(!visualizerOn || isSmoothPlay) return; 
+  visualizerFrameId = requestAnimationFrame(animateVisualizer); 
+  let data= new Uint8Array(analyser.frequencyBinCount); 
+  analyser.getByteFrequencyData(data); 
+  for(let i=0;i<10;i++){ 
+    let value=data[i*8]; 
+    bars[i].style.height= Math.max(20,value*1.2)+'px'; 
+  }
+}
+
+// Active Preset Highlight Logic
+function clearActivePresetHighlight() {
+  document.querySelectorAll('.eq-preset-item').forEach(el => {
+    el.classList.remove('active-preset');
+  });
+}
+
+function highlightActivePreset(presetName) {
+  clearActivePresetHighlight();
+  const activeEl = document.querySelector(`.eq-preset-item[data-preset="${presetName}"]`);
+  if (activeEl) {
+    activeEl.classList.add('active-preset');
+  }
+}
+
+function toggleEQ(){
+  if (isSmoothPlay) {
+    alert("Please turn off 'Smooth Play Mode' (⚡ button) to use Equalizer!");
+    return;
+  }
+  initAudioGraph();
+  eqOn = !eqOn; 
+  
+  const statusEl = document.getElementById('eqStatus');
+  
+  if(!eqOn){
+    statusEl.innerText = `Equalizer : OFF`; 
+    filters.forEach(f => { f.gain.value = 0; }); 
+    document.querySelectorAll('.eq-slider').forEach(s => { s.value = 0; }); 
+    clearActivePresetHighlight();
+  } else { 
+    statusEl.innerText = `Equalizer : Manual`; 
+  }
+}
+
+let angle = 0;
+let sound360Timer = null;
+
+function animate360(){ 
+  if(!sound360 || !panner || isSmoothPlay) return; 
+
+  angle += 0.0060; 
+  const radius = 0.65; 
+  const x = Math.sin(angle) * radius; 
+  const z = Math.cos(angle) * radius; 
+  const y = Math.sin(angle * 0.5) * 0.08; 
+
+  panner.positionX.setValueAtTime(x, ctx.currentTime); 
+  panner.positionY.setValueAtTime(y, ctx.currentTime); 
+  panner.positionZ.setValueAtTime(z, ctx.currentTime); 
+}
+
+function toggle360(){
+  if (isSmoothPlay) {
+    alert("Please turn off 'Smooth Play Mode' (⚡ button) to use 360° sound!");
+    return;
+  }
+  initAudioGraph();
+  sound360=!sound360; 
+  document.getElementById('sound360Text').innerText= `360° Sound : ${sound360?'ON':'OFF'}`; 
+  
+  if (sound360Timer) {
+    clearInterval(sound360Timer);
+    sound360Timer = null;
+  }
+
+  if (sound360) {
+    gainLtoR.gain.setValueAtTime(-0.35, ctx.currentTime); 
+    gainRtoL.gain.setValueAtTime(-0.35, ctx.currentTime);
+    masterGain.gain.setValueAtTime(1.25, ctx.currentTime); 
+    
+    sound360Timer = setInterval(animate360, 16.6);
+  } else {
+    gainLtoR.gain.setValueAtTime(0, ctx.currentTime);
+    gainRtoL.gain.setValueAtTime(0, ctx.currentTime);
+    masterGain.gain.setValueAtTime(1.0, ctx.currentTime);
+    if (panner) {
+      panner.positionX.setValueAtTime(0, ctx.currentTime);
+      panner.positionY.setValueAtTime(0, ctx.currentTime);
+      panner.positionZ.setValueAtTime(0, ctx.currentTime);
+    }
+  }
+}
+
+function setPreset(type){
+  if (isSmoothPlay) {
+    alert("Please turn off 'Smooth Play Mode' (⚡ button) to use EQ Presets!");
+    return;
+  }
+  initAudioGraph();
+  if(!eqOn){
+    eqOn=true; 
+  }
+  
+  const presetMap = {
+    normal: "Normal Preset",
+    sweetsound: "3D Sweet Sound",
+    bass: "Bass Boost",
+    vocal: "Vocal Boost",
+    treble: "Treble Boost",
+    dance: "Dance Mode",
+    rock: "Rock Mode",
+    soft: "Soft Music"
+  };
+
+  document.getElementById('eqStatus').innerText = `Equalizer : ${presetMap[type] || 'ON'}`;
+  highlightActivePreset(type);
+
+  let values=[]; 
+  switch(type){
+    case 'sweetsound': values=[4,5,3,-1,-2,1,3,4,5,4]; break;
+    case 'bass': values=[12,10,8,5,2,0,-2,-3,-4,-5]; break; 
+    case 'vocal': values=[-2,-1,1,4,7,9,8,5,2,0]; break; 
+    case 'treble': values=[-5,-4,-2,0,2,5,8,10,12,14]; break; 
+    case 'dance': values=[10,8,5,0,-2,3,6,9,10,8]; break; 
+    case 'rock': values=[8,6,3,-2,-4,2,5,7,8,9]; break; 
+    case 'soft': values=[2,2,1,0,0,1,2,3,3,2]; break; 
+    default: values=[0,0,0,0,0,0,0,0,0,0]; 
+  }
+  filters.forEach((f,i)=>{ f.gain.value=values[i]; }); 
+  document.querySelectorAll('.eq-slider').forEach((s,i)=>{ s.value=values[i]; }); 
+}
+
+function buildEQManualSliders() {
+  const eqWrap= document.getElementById('eqBands'); 
+  eqWrap.innerHTML = ""; 
+  freqs.forEach((f,i)=>{
+    eqWrap.innerHTML+=`
+      <div class="eq-band">
+        <label>${f} Hz</label>
+        <input type="range" class="eq-slider" min="-30" max="30" value="0" oninput="if(isSmoothPlay){alert('Turn off Smooth Play to use EQ');this.value=0;return;} initAudioGraph(); eqOn=true; filters[${i}].gain.value=this.value; document.getElementById('eqStatus').innerText='Equalizer : Manual'; clearActivePresetHighlight();">
+      </div>
+    `; 
+  });
+}
+
+document.getElementById('manualBass').oninput=e=>{
+  if (isSmoothPlay) { e.target.value=0; alert("Turn off Smooth Play to adjust EQ"); return; }
+  initAudioGraph();
+  eqOn = true;
+  filters[0].gain.value= e.target.value; 
+  filters[1].gain.value= e.target.value; 
+  document.getElementById('eqStatus').innerText = 'Equalizer : Manual';
+  clearActivePresetHighlight();
+};
+
+document.getElementById('manualMid').oninput=e=>{
+  if (isSmoothPlay) { e.target.value=0; alert("Turn off Smooth Play to adjust EQ"); return; }
+  initAudioGraph();
+  eqOn = true;
+  filters[4].gain.value= e.target.value; 
+  filters[5].gain.value= e.target.value; 
+  document.getElementById('eqStatus').innerText = 'Equalizer : Manual';
+  clearActivePresetHighlight();
+};
+
+document.getElementById('manualTreble').oninput=e=>{
+  if (isSmoothPlay) { e.target.value=0; alert("Turn off Smooth Play to adjust EQ"); return; }
+  initAudioGraph();
+  eqOn = true;
+  filters[8].gain.value= e.target.value; 
+  filters[9].gain.value= e.target.value; 
+  document.getElementById('eqStatus').innerText = 'Equalizer : Manual';
+  clearActivePresetHighlight();
+};
+
+/* ==================================
+   UTILITIES & INFO PANEL
+================================== */
+function sleepTimer(){
+  let min=prompt('Enter minutes to stop music'); 
+  if(!min) return; 
+  setTimeout(()=>{ audio.pause(); },min*60000); 
+  alert('Sleep timer started'); 
+}
+
+function showInfo(){
+  if(!playlist.length) return; 
+  document.getElementById('infoContent').innerHTML=`
+    <b>File Name :</b><br>
+    ${currentMeta.fileName}<br><br>
+    <b>Title :</b><br>
+    ${currentMeta.title}<br><br>
+    <b>Artist :</b><br>
+    ${currentMeta.artist}<br><br>
+    <b>Album :</b><br>
+    ${currentMeta.album}<br><br>
+    <b>Path :</b><br>
+    ${currentMeta.path}<br><br>
+    <b>File Size :</b><br>
+    ${currentMeta.size}<br><br>
+    <b>Type :</b><br>
+    ${currentMeta.type}<br><br>
+    <b>Duration :</b><br>
+    ${currentMeta.duration}
+  `; 
+  togglePopup('infoPopup'); 
+}
+
+function shareCurrentSong(){
+  if(!playlist.length) {
+    alert("No song loaded to share!"); 
+    return; 
+  }
+  
+  const original = playlist[currentIndex]; 
+
+  const file = new File(
+    [original],
+    original.name || "audio.mp3", 
+    {
+      type: original.type || "audio/mpeg" 
+    }
+  );
+
+  if (navigator.share) { 
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { 
+      navigator.share({
+        title: file.name, 
+        text: "Shared from Chromium Max Audio Player", 
+        files: [file] 
+      })
+      .then(() => console.log('Successful share')) 
+      .catch((error) => alert('Sharing failed: ' + error.message)); 
+    } else {
+      alert("File sharing not supported on this device/browser."); 
+    }
+  } else {
+    alert("Web Share API not supported."); 
+  }
+}
+
+function exitPlayer(){
+  const confirmExit = confirm("Are you sure you want to exit and close this tab?"); 
+  if(!confirmExit) return; 
+  
+  // মিউজিক পজ করা হচ্ছে
+  audio.pause(); 
+  el.play.innerHTML='<i class="fa fa-play"></i>'; 
+  
+  // ১. সাধারণ উইন্ডো ক্লোজ করার চেষ্টা
+  window.close();
+
+  // ২. যদি সরাসরি ট্যাবটি ক্লোজ না হয় (ব্রাউজার সিকিউরিটির কারণে), 
+  // তাহলে একটি ফাঁকা উইন্ডো সেলফ-ওপেন করে ক্লোজ করার ট্রিক:
+  setTimeout(() => {
+    window.open('', '_self', '');
+    window.close();
+  }, 100);
+}
+
+/* =============================================
+   DUAL EAR PLAYER DASHBOARD
+============================================= */
+let dualL = { audio: new Audio(), playlist: [], currentIdx: 0, panner: null, source: null, isRandom: false };
+let dualR = { audio: new Audio(), playlist: [], currentIdx: 0, panner: null, source: null, isRandom: false };
+let dualActive = false;
+
+function initDualPlayers() {
+  dualActive = true;
+  if (!audio.paused) togglePlay(); 
+
+  const dualCtx = new AudioContextClass();
+
+  if (!dualL.panner) {
+    dualL.source = dualCtx.createMediaElementSource(dualL.audio);
+    dualL.panner = dualCtx.createStereoPanner ? dualCtx.createStereoPanner() : null;
+    if (dualL.panner) {
+      dualL.panner.pan.setValueAtTime(-1.0, dualCtx.currentTime);
+      dualL.source.connect(dualL.panner).connect(dualCtx.destination);
+    } else {
+      dualL.source.connect(dualCtx.destination);
+    }
+  }
+
+  if (!dualR.panner) {
+    dualR.source = dualCtx.createMediaElementSource(dualR.audio);
+    dualR.panner = dualCtx.createStereoPanner ? dualCtx.createStereoPanner() : null;
+    if (dualR.panner) {
+      dualR.panner.pan.setValueAtTime(1.0, dualCtx.currentTime);
+      dualR.source.connect(dualR.panner).connect(dualCtx.destination);
+    } else {
+      dualR.source.connect(dualCtx.destination);
+    }
+  }
+
+  dualL.audio.ontimeupdate = () => {
+    const prog = document.getElementById('dualProgressL');
+    if (!isNaN(dualL.audio.duration)) {
+      prog.max = dualL.audio.duration;
+      prog.value = dualL.audio.currentTime;
+    }
+  };
+  dualR.audio.ontimeupdate = () => {
+    const prog = document.getElementById('dualProgressR');
+    if (!isNaN(dualR.audio.duration)) {
+      prog.max = dualR.audio.duration;
+      prog.value = dualR.audio.currentTime;
+    }
+  };
+
+  dualL.audio.onended = () => nextDual('L');
+  dualR.audio.onended = () => nextDual('R');
+}
+
+// Dual Ear প্লেলিস্ট রেন্ডার করার ফাংশন (প্রধান অ্যাপের স্টাইল বজায় রাখা হয়েছে)
+function renderDualPlaylist(chan) {
+  const target = chan === 'L' ? dualL : dualR;
+  const container = document.getElementById(`dualPlaylistContainer${chan}`);
+  
+  if (!target.playlist.length) {
+    container.innerHTML = `<div style="text-align:center;font-size:11px;opacity:0.5;padding:10px;">No tracks loaded</div>`;
+    return;
+  }
+
+  container.innerHTML = target.playlist.map((f, i) => `
+    <div class="song-item ${i === target.currentIdx ? 'active' : ''}" 
+         style="padding: 8px 10px; margin-bottom: 4px; border-radius: 8px; font-size: 12px; background: rgba(255,255,255,0.02);"
+         onclick="loadDualTrack('${chan}', ${i})">
+      <i class="fa ${i === target.currentIdx ? 'fa-volume-high' : 'fa-music'}" style="font-size: 11px;"></i>
+      <div class="song-name" style="font-size: 12px;">${f.name}</div>
+      <button class="remove-btn" style="font-size: 11px; padding: 2px 5px;" onclick="removeDualSong('${chan}', ${i}, event)">
+        <i class="fa fa-trash-can"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+// প্লেলিস্ট থেকে গান বাদ দেওয়া
+function removeDualSong(chan, idx, event) {
+  if (event) event.stopPropagation();
+  const target = chan === 'L' ? dualL : dualR;
+  const songName = target.playlist[idx] ? target.playlist[idx].name : "this song";
+  
+  if (confirm(`Remove "${songName}" from ${chan === 'L' ? 'Left' : 'Right'} ear list?`)) {
+    URL.revokeObjectURL(target.playlist[idx].url);
+    target.playlist.splice(idx, 1);
+    
+    if (target.currentIdx >= target.playlist.length) {
+      target.currentIdx = 0;
+    }
+    
+    if (target.playlist.length === 0) {
+      target.audio.pause();
+      target.audio.src = '';
+      document.getElementById(`dualTitle${chan}`).innerText = "No Track Loaded";
+      document.querySelector(`.idual-play-${chan}`).className = `fa idual-play-${chan} fa-play`;
+    } else {
+      loadDualTrack(chan, target.currentIdx);
+    }
+    
+    renderDualPlaylist(chan);
+  }
+}
+
+// প্লেলিস্ট অন/অফ টগল করা
+function toggleDualList(chan) {
+  const container = document.getElementById(`dualPlaylistContainer${chan}`);
+  if (container.style.display === "none") {
+    container.style.display = "block";
+    renderDualPlaylist(chan);
+  } else {
+    container.style.display = "none";
+  }
+}
+
+function loadDualDirectory(chan, files) {
+  const target = chan === 'L' ? dualL : dualR;
+  const filtered = Array.from(files).filter(file => file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i));
+  
+  if(filtered.length === 0) {
+    alert("No valid audio files found in selected directory.");
+    return;
+  }
+
+  target.playlist = filtered.map(file => ({
+    name: file.name,
+    url: URL.createObjectURL(file)
+  }));
+  target.currentIdx = 0;
+  
+  loadDualTrack(chan, 0);
+  
+  // স্বয়ংক্রিয়ভাবে প্লেলিস্ট প্যানেল ওপেন ও আপডেট করা
+  document.getElementById(`dualPlaylistContainer${chan}`).style.display = "block";
+  renderDualPlaylist(chan);
+}
+
+function loadDualFiles(chan, files) {
+  const target = chan === 'L' ? dualL : dualR;
+  target.playlist = Array.from(files).map(file => ({
+    name: file.name,
+    url: URL.createObjectURL(file)
+  }));
+  target.currentIdx = 0;
+  
+  if (target.playlist.length > 0) {
+    loadDualTrack(chan, 0);
+  }
+  
+  // প্লেলিস্ট প্যানেল ওপেন ও আপডেট
+  document.getElementById(`dualPlaylistContainer${chan}`).style.display = "block";
+  renderDualPlaylist(chan);
+}
+
+function loadDualTrack(chan, idx) {
+  const target = chan === 'L' ? dualL : dualR;
+  if (!target.playlist[idx]) return;
+  target.currentIdx = idx;
+  target.audio.src = target.playlist[idx].url;
+  document.getElementById(`dualTitle${chan}`).innerText = target.playlist[idx].name;
+  
+  target.audio.play().catch(err => console.log("Play blocked:", err));
+  document.querySelector(`.idual-play-${chan}`).className = `fa idual-play-${chan} fa-pause`;
+  
+  // প্লেলিস্টে বর্তমান বাজতে থাকা ট্র্যাকটির স্টাইল আপডেট
+  renderDualPlaylist(chan);
+}
+
+function playPauseDual(chan) {
+  const target = chan === 'L' ? dualL : dualR;
+  if (!target.audio.src) return;
+  
+  if (target.audio.paused) {
+    target.audio.play();
+    document.querySelector(`.idual-play-${chan}`).className = `fa idual-play-${chan} fa-pause`;
+  } else {
+    target.audio.pause();
+    document.querySelector(`.idual-play-${chan}`).className = `fa idual-play-${chan} fa-play`;
+  }
+}
+
+function nextDual(chan) {
+  const target = chan === 'L' ? dualL : dualR;
+  if (target.playlist.length === 0) return;
+
+  if (target.isRandom) {
+    let randIdx = Math.floor(Math.random() * target.playlist.length);
+    loadDualTrack(chan, randIdx);
+  } else {
+    let nextIdx = (target.currentIdx + 1) % target.playlist.length;
+    loadDualTrack(chan, nextIdx);
+  }
+}
+
+function prevDual(chan) {
+  const target = chan === 'L' ? dualL : dualR;
+  if (target.playlist.length === 0) return;
+  
+  if (target.isRandom) {
+    let randIdx = Math.floor(Math.random() * target.playlist.length);
+    loadDualTrack(chan, randIdx);
+  } else {
+    let prevIdx = (target.currentIdx - 1 + target.playlist.length) % target.playlist.length;
+    loadDualTrack(chan, prevIdx);
+  }
+}
+
+function toggleRandomDual(chan) {
+  const target = chan === 'L' ? dualL : dualR;
+  target.isRandom = !target.isRandom;
+  
+  const icon = document.querySelector(`#dualRandBtn${chan} i`);
+  if (target.isRandom) {
+    icon.style.opacity = "1";
+    icon.style.color = chan === 'L' ? "var(--primary)" : "var(--touch-active)";
+  } else {
+    icon.style.opacity = "0.4";
+    icon.style.color = "#fff";
+  }
+}
+
+function seekDual(chan, value) {
+  const target = chan === 'L' ? dualL : dualR;
+  if (target.audio.src) target.audio.currentTime = value;
+}
+
+// Window globally binding
+window.seekDual = seekDual;
+window.volDual = volDual;
+window.muteDual = muteDual;
+window.toggleRandomDual = toggleRandomDual;
+window.prevDual = prevDual;
+window.playPauseDual = playPauseDual;
+window.nextDual = nextDual;
+window.loadDualDirectory = loadDualDirectory;
+window.loadDualFiles = loadDualFiles;
+window.dualAction = dualAction;
+window.destroyDualPlayers = destroyDualPlayers;
+window.initDualPlayers = initDualPlayers;
+window.toggleDualList = toggleDualList;
+window.removeDualSong = removeDualSong;
+
+function volDual(chan, value) {
+  const target = chan === 'L' ? dualL : dualR;
+  target.audio.volume = value;
+}
+
+function muteDual(chan) {
+  const target = chan === 'L' ? dualL : dualR;
+  target.audio.muted = !target.audio.muted;
+  document.getElementById(`dualMuteBtn${chan}`).innerHTML = target.audio.muted ? '<i class="fa fa-volume-xmark"></i>' : '<i class="fa fa-volume-high"></i>';
+}
+
+function dualAction(action) {
+  if (action === 'play') {
+    if (dualL.audio.src) {
+      dualL.audio.play();
+      document.querySelector(`.idual-play-L`).className = "fa idual-play-L fa-pause";
+    }
+    if (dualR.audio.src) {
+      dualR.audio.play();
+      document.querySelector(`.idual-play-R`).className = "fa idual-play-R fa-pause";
+    }
+  } else if (action === 'pause') {
+    dualL.audio.pause();
+    dualR.audio.pause();
+    document.querySelector(`.idual-play-L`).className = "fa idual-play-L fa-play";
+    document.querySelector(`.idual-play-R`).className = "fa idual-play-R fa-play";
+  }
+}
+
+function destroyDualPlayers() {
+  dualActive = false;
+  dualL.audio.pause();
+  dualR.audio.pause();
+  
+  dualL.playlist.forEach(item => URL.revokeObjectURL(item.url));
+  dualR.playlist.forEach(item => URL.revokeObjectURL(item.url));
+  
+  dualL.playlist = [];
+  dualR.playlist = [];
+  dualL.audio.src = '';
+  dualR.audio.src = '';
+  dualL.isRandom = false;
+  dualR.isRandom = false;
+
+  document.getElementById(`dualRandBtnL`).querySelector('i').style.opacity = "0.4";
+  document.getElementById(`dualRandBtnL`).querySelector('i').style.color = "#fff";
+  document.getElementById(`dualRandBtnR`).querySelector('i').style.opacity = "0.4";
+  document.getElementById(`dualRandBtnR`).querySelector('i').style.color = "#fff";
+  
+  document.getElementById("dualTitleL").innerText = "No Track Loaded";
+  document.getElementById("dualTitleR").innerText = "No Track Loaded";
+  
+  // ক্লিয়ার ও বন্ধ করা হচ্ছে প্লেলিস্ট কন্টেইনার
+  document.getElementById("dualPlaylistContainerL").innerHTML = "";
+  document.getElementById("dualPlaylistContainerL").style.display = "none";
+  document.getElementById("dualPlaylistContainerR").innerHTML = "";
+  document.getElementById("dualPlaylistContainerR").style.display = "none";
+}
+  
+// যেকোনো অবস্থাতেই বন্ধ করার আগে Yes/No কনফার্মেশন নেওয়ার ফাংশন
+function confirmCloseDualPlayer() {
+  const confirmExit = confirm("Are you sure you want to exit Dual Ear Player? (This will reset your temporary playlists)");
+  
+  if (confirmExit) {
+    togglePopup('dualPlayerPopup');
+    destroyDualPlayers();
+  }
+}
+
+// উইন্ডো গ্লোবাল বাইন্ডিং-এ ফাংশনটি যুক্ত করা হলো
+window.confirmCloseDualPlayer = confirmCloseDualPlayer;
+
+
+/* ==================================
+   MEDIA NOTIFICATION BINDINGS
+================================== */
+if('mediaSession' in navigator){
+  navigator.mediaSession.setActionHandler('play', ()=>{
+    audio.play(); 
+    updateMediaSessionPlaybackState(); 
+  });
+  navigator.mediaSession.setActionHandler('pause', ()=>{
+    audio.pause(); 
+    updateMediaSessionPlaybackState(); 
+  });
+  navigator.mediaSession.setActionHandler('previoustrack', ()=>prev()); 
+  navigator.mediaSession.setActionHandler('nexttrack', ()=>next()); 
+}
+
+
+// স্ক্রিন অফ হলেও ব্রাউজারের প্রসেসরকে সজাগ রাখার ট্রিক
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('Wake Lock is active! Screen won\'t sleep easily.');
+    }
+  } catch (err) {
+    console.log(`${err.name}, ${err.message}`);
+  }
+}
+
+// গান বাজতে শুরু করলেই Wake Lock একটিভ হবে
+audio.addEventListener('play', () => {
+  requestWakeLock();
+});
+
+// গান পজ হলে বা শেষ হলে লক ছেড়ে দেবে যাতে অতিরিক্ত ব্যাটারি নষ্ট না হয়
+audio.addEventListener('pause', () => {
+  if (wakeLock !== null) {
+    wakeLock.release();
+    wakeLock = null;
+  }
+});
+
+</script>
+
+</body>
+</html>
